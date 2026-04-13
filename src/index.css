@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  /* FlightOps Log Design Tokens — from iOS app asset catalog */
+
+  /* Primary palette */
+  --color-primary: #2C3E50;
+  --color-primary-dark: #E8E4DF;
+  --color-action: #1B365D;
+  --color-action-dark: #2A4F80;
+  --color-accent: #E67E22;
+
+  /* Semantic */
+  --color-success: #27AE60;
+  --color-error: #E74C3C;
+  --color-warning: #E67E22;
+
+  /* Surfaces */
+  --color-surface: #F4F4F2;
+  --color-surface-dark: #141414;
+  --color-card: #FFFFFF;
+  --color-card-dark: #1C1C1E;
+
+  /* Text */
+  --color-secondary-text: #8A8A85;
+  --color-secondary-text-dark: #7A7A75;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
