@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import logo from './assets/logo.png'
 
 function App() {
@@ -53,8 +54,8 @@ function App() {
             description="Your logbook syncs automatically across all your Apple devices. Local-first design means it works offline."
           />
           <FeatureCard
-            title="Completely Free"
-            description="No subscriptions. No in-app purchases. No ads. Just a logbook that works."
+            title="Free to Use"
+            description="Everything you need to log your flights — no subscriptions, no ads. The tools that matter are free, always."
           />
         </div>
       </section>
@@ -62,6 +63,9 @@ function App() {
       {/* Footer */}
       <footer className="text-center text-secondary-text text-sm py-8 border-t border-secondary-text/20">
         <p>&copy; {new Date().getFullYear()} FlightOps Log. All rights reserved.</p>
+        <Link to="/privacy" className="text-secondary-text hover:text-primary transition-colors mt-2 inline-block">
+          Privacy Policy
+        </Link>
       </footer>
     </div>
   )
