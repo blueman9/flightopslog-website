@@ -63,9 +63,14 @@ function App() {
       {/* Footer */}
       <footer className="text-center text-secondary-text text-sm py-8 border-t border-secondary-text/20">
         <p>&copy; {new Date().getFullYear()} FlightOps Log. All rights reserved.</p>
-        <Link to="/privacy" className="text-secondary-text hover:text-primary transition-colors mt-2 inline-block">
-          Privacy Policy
-        </Link>
+        <div className="flex justify-center gap-4 mt-2">
+          <Link to="/privacy" className="text-secondary-text hover:text-primary transition-colors">
+            Privacy Policy
+          </Link>
+          <Link to="/support" className="text-secondary-text hover:text-primary transition-colors">
+            Support
+          </Link>
+        </div>
       </footer>
     </div>
   )
