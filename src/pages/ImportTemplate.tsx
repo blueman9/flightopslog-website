@@ -1,7 +1,17 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import logo from '../assets/logo.png'
 
+type SpreadsheetApp = 'excel' | 'numbers' | 'sheets'
+
+const tabs: { id: SpreadsheetApp; label: string }[] = [
+  { id: 'excel', label: 'Microsoft Excel' },
+  { id: 'numbers', label: 'Apple Numbers' },
+  { id: 'sheets', label: 'Google Sheets' },
+]
+
 function ImportTemplate() {
+  const [activeTab, setActiveTab] = useState<SpreadsheetApp>('excel')
   return (
     <div className="min-h-screen bg-surface text-primary">
       {/* Nav */}
@@ -60,43 +70,93 @@ function ImportTemplate() {
               below — other "CSV" options can mangle characters or change the format.
             </p>
 
-            <SubSection title="Microsoft Excel">
-              <ul className="list-disc list-outside ml-5 space-y-1">
-                <li>Edit normally.</li>
-                <li>
-                  When saving, choose{' '}
-                  <strong>File → Save As → CSV UTF-8 (Comma delimited) (*.csv)</strong>.
-                </li>
-                <li>
-                  Do <em>not</em> use the plain "CSV (Comma delimited)" option — it can
-                  corrupt non-ASCII characters in remarks.
-                </li>
-              </ul>
-            </SubSection>
+            <div
+              role="tablist"
+              aria-label="Spreadsheet app"
+              className="flex gap-1 border-b border-secondary-text/20 mb-4"
+            >
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    type="button"
+                    aria-selected={isActive}
+                    aria-controls={`panel-${tab.id}`}
+                    id={`tab-${tab.id}`}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={
+                      'px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ' +
+                      (isActive
+                        ? 'border-action text-action'
+                        : 'border-transparent text-secondary-text hover:text-primary')
+                    }
+                  >
+                    {tab.label}
+                  </button>
+                )
+              })}
+            </div>
 
-            <SubSection title="Apple Numbers">
-              <ul className="list-disc list-outside ml-5 space-y-1">
-                <li>Edit normally.</li>
-                <li>
-                  Export via <strong>File → Export To → CSV…</strong>.
-                </li>
-                <li>
-                  Expand <strong>Advanced Options</strong> and set{' '}
-                  <strong>Text Encoding: Unicode (UTF-8)</strong>.
-                </li>
-              </ul>
-            </SubSection>
+            {activeTab === 'excel' && (
+              <div
+                role="tabpanel"
+                id="panel-excel"
+                aria-labelledby="tab-excel"
+                className="bg-card rounded-lg border border-secondary-text/20 p-5"
+              >
+                <ul className="list-disc list-outside ml-5 space-y-1">
+                  <li>Edit normally.</li>
+                  <li>
+                    When saving, choose{' '}
+                    <strong>File → Save As → CSV UTF-8 (Comma delimited) (*.csv)</strong>.
+                  </li>
+                  <li>
+                    Do <em>not</em> use the plain "CSV (Comma delimited)" option — it
+                    can corrupt non-ASCII characters in remarks.
+                  </li>
+                </ul>
+              </div>
+            )}
 
-            <SubSection title="Google Sheets">
-              <ul className="list-disc list-outside ml-5 space-y-1">
-                <li>Edit normally.</li>
-                <li>
-                  Export via{' '}
-                  <strong>File → Download → Comma Separated Values (.csv)</strong>.
-                </li>
-                <li>Google Sheets uses UTF-8 by default — no extra settings needed.</li>
-              </ul>
-            </SubSection>
+            {activeTab === 'numbers' && (
+              <div
+                role="tabpanel"
+                id="panel-numbers"
+                aria-labelledby="tab-numbers"
+                className="bg-card rounded-lg border border-secondary-text/20 p-5"
+              >
+                <ul className="list-disc list-outside ml-5 space-y-1">
+                  <li>Edit normally.</li>
+                  <li>
+                    Export via <strong>File → Export To → CSV…</strong>.
+                  </li>
+                  <li>
+                    Expand <strong>Advanced Options</strong> and set{' '}
+                    <strong>Text Encoding: Unicode (UTF-8)</strong>.
+                  </li>
+                </ul>
+              </div>
+            )}
+
+            {activeTab === 'sheets' && (
+              <div
+                role="tabpanel"
+                id="panel-sheets"
+                aria-labelledby="tab-sheets"
+                className="bg-card rounded-lg border border-secondary-text/20 p-5"
+              >
+                <ul className="list-disc list-outside ml-5 space-y-1">
+                  <li>Edit normally.</li>
+                  <li>
+                    Export via{' '}
+                    <strong>File → Download → Comma Separated Values (.csv)</strong>.
+                  </li>
+                  <li>Google Sheets uses UTF-8 by default — no extra settings needed.</li>
+                </ul>
+              </div>
+            )}
 
             <p className="text-secondary-text mt-4">
               Heads up: spreadsheet apps will "helpfully" reformat dates and strip
@@ -180,13 +240,5 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-4">
-      <h3 className="text-base font-semibold mb-2">{title}</h3>
-      {children}
-    </div>
-  )
-}
 
 export default ImportTemplate
