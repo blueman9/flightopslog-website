@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import PrivacyPolicy from './pages/PrivacyPolicy.tsx'
 import Support from './pages/Support.tsx'
+import ImportTemplate from './pages/ImportTemplate.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -13,6 +14,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<App />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/support" element={<Support />} />
+        <Route path="/import-template" element={<ImportTemplate />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

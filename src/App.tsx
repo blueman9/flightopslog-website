@@ -70,6 +70,9 @@ function App() {
           <Link to="/support" className="text-secondary-text hover:text-primary transition-colors">
             Support
           </Link>
+          <Link to="/import-template" className="text-secondary-text hover:text-primary transition-colors">
+            Import Template
+          </Link>
         </div>
       </footer>
     </div>

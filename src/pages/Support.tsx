@@ -13,6 +13,11 @@ const faqs = [
       'Open the app and navigate to the export feature. You can export your flights to CSV for use in spreadsheets, or create a full backup in .plbbackup format for safekeeping or transferring to another device.',
   },
   {
+    question: 'How do I bulk import existing flights?',
+    answer:
+      'Download our CSV import template, fill it in with your flights in a spreadsheet app, and import the file from Settings → Data Management → Import from CSV. See the full guide at /import-template.',
+  },
+  {
     question: 'What iOS version is required?',
     answer: 'FlightOps Log requires iOS 17.0 or later.',
   },
@@ -92,6 +97,14 @@ function Support() {
       {/* Footer */}
       <footer className="text-center text-secondary-text text-sm py-8 border-t border-secondary-text/20">
         <p>&copy; {new Date().getFullYear()} FlightOps Log. All rights reserved.</p>
+        <div className="flex justify-center gap-4 mt-2">
+          <Link to="/privacy" className="text-secondary-text hover:text-primary transition-colors">
+            Privacy Policy
+          </Link>
+          <Link to="/import-template" className="text-secondary-text hover:text-primary transition-colors">
+            Import Template
+          </Link>
+        </div>
       </footer>
     </div>
   )
