@@ -138,7 +138,7 @@ None needed for the page itself. If the static asset is missing (e.g., someone f
 - Open the downloaded CSV in a spreadsheet app to confirm it's not corrupted.
 - Verify the footer "Import Template" link appears on `/`, `/support`, `/privacy`, and `/import-template`.
 - Verify the Support FAQ entry links to `/import-template` and the link works.
-- Verify direct-URL access to `/import-template` works (tests the Cloudflare Pages SPA routing — there's no `_redirects` file currently, so this should use whatever mechanism replaced it).
+- Verify direct-URL access to `/import-template` works on the deployed Cloudflare Pages site (tests SPA routing for the new route).
 
 ## Open questions
 
