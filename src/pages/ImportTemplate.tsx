@@ -122,8 +122,10 @@ function ImportTemplate() {
                 value to log — it keeps your totals honest.
               </li>
               <li>
-                <strong>Don't rename, remove, or reorder the header row.</strong>{' '}
-                The app matches columns by header name; changes here will break the import.
+                <strong>Don't rename or remove headers.</strong> The app matches
+                columns by header name, so the names in the top row must stay
+                exactly as the template has them. Column order doesn't matter —
+                you can rearrange columns if you prefer a different layout.
               </li>
               <li>
                 <strong>Tail numbers and flight numbers:</strong> format those columns
