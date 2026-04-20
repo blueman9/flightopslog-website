@@ -159,41 +159,35 @@ function ImportTemplate() {
             )}
 
             <p className="text-secondary-text mt-4">
-              Heads up: spreadsheet apps will "helpfully" reformat dates and strip
-              leading zeros from tail numbers. See the pitfalls below to work around this.
+              Heads up: spreadsheet apps will "helpfully" strip leading zeros from
+              tail and flight numbers. See the pitfalls below to work around this.
             </p>
           </Section>
 
           <Section title="Common pitfalls">
             <ul className="list-disc list-outside ml-5 space-y-3">
               <li>
-                <strong>Dates must stay in <code>YYYY-MM-DD</code> format</strong>{' '}
-                (e.g., <code>2024-11-15</code>). If your spreadsheet shows{' '}
-                <code>11/15/2024</code>, format the Date column as <strong>Text</strong>{' '}
-                before entering values, or reformat to ISO style before saving.
+                <strong>Flight times are decimal hours, not <code>H:MM</code></strong> —
+                use <code>1.5</code> for one and a half hours, not <code>1:30</code>.
               </li>
               <li>
-                <strong>Times are decimal hours, not <code>H:MM</code></strong> — use{' '}
-                <code>1.5</code> for one and a half hours, not <code>1:30</code>.
+                <strong>Leave cells blank when a field doesn't apply</strong> —
+                don't enter <code>0</code> where there's nothing to log. It keeps
+                your totals honest.
               </li>
               <li>
-                <strong>Blank cells are fine.</strong> Leave a column empty if it
-                doesn't apply rather than entering <code>0</code> where there's no
-                value to log — it keeps your totals honest.
+                <strong>Format Tail Number and Flight Number columns as Text</strong>{' '}
+                so leading zeros survive save and export.
               </li>
               <li>
-                <strong>Don't rename or remove headers.</strong> The app matches
-                columns by header name, so the names in the top row must stay
-                exactly as the template has them. Column order doesn't matter —
-                you can rearrange columns if you prefer a different layout.
+                <strong>Date and Total Time are the only required columns</strong> —
+                everything else is optional.
               </li>
               <li>
-                <strong>Tail numbers and flight numbers:</strong> format those columns
-                as <strong>Text</strong> so leading zeros survive save/export.
-              </li>
-              <li>
-                <strong>Remarks with commas are fine</strong> — spreadsheet apps
-                auto-quote them on export. Don't add quotes manually.
+                <strong>Column order and header names are flexible.</strong> The app
+                auto-detects common variants (e.g., <code>Tail</code>,{' '}
+                <code>Registration</code>, <code>N-Number</code>) and lets you map
+                anything it doesn't recognize in one tap during import.
               </li>
             </ul>
           </Section>
