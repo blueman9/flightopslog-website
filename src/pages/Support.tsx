@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import logo from '../assets/logo.png'
+import DownloadCTA from '../components/DownloadCTA'
 
 const faqs = [
   {
@@ -51,12 +52,7 @@ function Support() {
           <img src={logo} alt="FlightOps Log" className="w-10 h-10 rounded-lg" />
           <span className="text-xl font-bold tracking-tight">FlightOps Log</span>
         </Link>
-        <a
-          href="https://apps.apple.com"
-          className="bg-action text-white px-5 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
-        >
-          Download on the App Store
-        </a>
+        <DownloadCTA />
       </nav>
 
       {/* Content */}
