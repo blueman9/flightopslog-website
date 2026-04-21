@@ -55,7 +55,7 @@ function App() {
           />
           <FeatureCard
             title="Free to Use"
-            description="Everything you need to log your flights — no subscriptions, no ads. The tools that matter are free, always."
+            description="Log your flights without ads or paywalls. The core logbook will always be free."
           />
         </div>
       </section>

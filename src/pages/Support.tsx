@@ -14,8 +14,17 @@ const faqs = [
   },
   {
     question: 'How do I bulk import existing flights?',
-    answer:
-      'Download our CSV import template, fill it in with your flights in a spreadsheet app, and import the file from Settings → Data Management → Import from CSV. See the full guide at /import-template.',
+    answer: (
+      <>
+        Download our CSV import template, fill it in with your flights in a spreadsheet app, and
+        import the file from Settings → Data Management → Import from CSV. See the full guide on
+        the{' '}
+        <Link to="/import-template" className="text-action underline">
+          Import Template
+        </Link>{' '}
+        page.
+      </>
+    ),
   },
   {
     question: 'What iOS version is required?',
@@ -64,7 +73,7 @@ function Support() {
               <a href="mailto:support@flightopslog.com" className="text-action underline">
                 support@flightopslog.com
               </a>
-              . We typically respond within 48–72 hours.
+              . Replies may take a few days — thanks for your patience.
             </p>
           </Section>
 
