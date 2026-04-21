@@ -106,6 +106,9 @@ function Support() {
           <Link to="/privacy" className="text-secondary-text hover:text-primary transition-colors">
             Privacy Policy
           </Link>
+          <Link to="/support" className="text-secondary-text hover:text-primary transition-colors">
+            Support
+          </Link>
           <Link to="/import-template" className="text-secondary-text hover:text-primary transition-colors">
             Import Template
           </Link>

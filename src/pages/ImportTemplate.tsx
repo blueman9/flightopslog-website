@@ -212,6 +212,9 @@ function ImportTemplate() {
           <Link to="/support" className="text-secondary-text hover:text-primary transition-colors">
             Support
           </Link>
+          <Link to="/import-template" className="text-secondary-text hover:text-primary transition-colors">
+            Import Template
+          </Link>
           <Link to="/testflight" className="text-secondary-text hover:text-primary transition-colors">
             Beta
           </Link>
