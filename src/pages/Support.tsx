@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import logo from '../assets/logo.png'
 import DownloadCTA from '../components/DownloadCTA'
+import Footer from '../components/Footer'
 
 const faqs = [
   {
@@ -99,24 +100,7 @@ function Support() {
         </div>
       </article>
 
-      {/* Footer */}
-      <footer className="text-center text-secondary-text text-sm py-8 border-t border-secondary-text/20">
-        <p>&copy; {new Date().getFullYear()} FlightOps Log. All rights reserved.</p>
-        <div className="flex justify-center gap-4 mt-2">
-          <Link to="/privacy" className="text-secondary-text hover:text-primary transition-colors">
-            Privacy Policy
-          </Link>
-          <Link to="/support" className="text-secondary-text hover:text-primary transition-colors">
-            Support
-          </Link>
-          <Link to="/import-template" className="text-secondary-text hover:text-primary transition-colors">
-            Import Template
-          </Link>
-          <Link to="/testflight" className="text-secondary-text hover:text-primary transition-colors">
-            Beta
-          </Link>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
