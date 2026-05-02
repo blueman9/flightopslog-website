@@ -79,21 +79,24 @@ A private feedback-triage dashboard at `flightopslog.com/admin`, locked to a sin
 ### How it works
 
 - The route is lazy-loaded (`React.lazy`) so the marketing bundle ships zero Firebase code — Firebase downloads only when `/admin` is visited.
-- Sign-in uses Firebase Auth's Google provider client-side; the admin email is checked in three places: the SPA (`src/admin/AdminApp.tsx`), Firestore security rules, and the Cloudflare Pages Function.
-- Convert-to-Linear posts to a Pages Function at `/api/linear-create-issue`. The Function verifies the Firebase ID token via `jose` and Google's JWKS, then calls the Linear GraphQL API with a Workers secret. The API key never reaches the browser.
+- Sign-in uses Firebase Auth's Google provider client-side; the admin email is checked in three places: the SPA (`src/admin/AdminApp.tsx`), the Worker handler, and Firestore security rules.
+- The site deploys as a Cloudflare **Worker with static assets**, configured in `wrangler.jsonc`. The Worker entrypoint at `worker/index.ts` routes `POST /api/linear-create-issue` to the handler in `worker/handlers/linear-create-issue.ts` and forwards everything else to `env.ASSETS.fetch(request)` (which serves `dist/` and falls back to `index.html` for SPA routes).
+- The handler verifies the Firebase ID token via `jose` against Google's JWKS, then calls the Linear GraphQL API with the `LINEAR_API_KEY` secret. The API key never reaches the browser.
 
 ### Deployment requirements
 
-**Cloudflare Pages env vars (production):**
+**Cloudflare Worker variables (production) — Plaintext, build-time, set in dashboard:**
 
 - `VITE_FIREBASE_API_KEY`
 - `VITE_FIREBASE_AUTH_DOMAIN` (e.g. `flightopslog.firebaseapp.com`)
 - `VITE_FIREBASE_PROJECT_ID` (`flightopslog`)
 - `VITE_FIREBASE_APP_ID`
 
-**Cloudflare Pages secret (for the Function):**
+These are inlined by Vite at build time. They live under Worker → Settings → Variables and Secrets, type **Plaintext**.
 
-- `LINEAR_API_KEY` — set via `npx wrangler pages secret put LINEAR_API_KEY` or in the Pages dashboard.
+**Cloudflare Worker secret (for the handler) — Encrypted, runtime:**
+
+- `LINEAR_API_KEY` — set via `wrangler secret put LINEAR_API_KEY` or in the Worker dashboard with type **Secret**.
 
 **Firebase:**
 
@@ -102,9 +105,25 @@ A private feedback-triage dashboard at `flightopslog.com/admin`, locked to a sin
 
 ### Local development
 
-Copy `.env.example` to `.env.local` and fill in your Firebase web SDK config. To exercise the Pages Function locally:
+Copy `.env.example` to `.env.local` and fill in your Firebase web SDK config. To exercise the Worker locally (handler + assets):
 
 ```bash
 npm run build
-npx wrangler pages dev dist --binding LINEAR_API_KEY=<your-linear-key>
+npx wrangler dev
 ```
+
+`wrangler dev` reads `.dev.vars` for the `LINEAR_API_KEY`. Create one (gitignored via `*.local` + add `.dev.vars` to `.gitignore` if needed) with:
+
+```
+LINEAR_API_KEY=<your-linear-key>
+```
+
+### Regenerating Worker types
+
+If you change `wrangler.jsonc`, regenerate the typed env with:
+
+```bash
+npx wrangler types
+```
+
+This rewrites `worker-configuration.d.ts` (committed to the repo).
