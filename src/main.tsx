@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
@@ -7,6 +7,8 @@ import PrivacyPolicy from './pages/PrivacyPolicy.tsx'
 import Support from './pages/Support.tsx'
 import ImportTemplate from './pages/ImportTemplate.tsx'
 import TestFlight from './pages/TestFlight.tsx'
+
+const AdminApp = lazy(() => import('./admin/AdminApp.tsx'))
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,6 +19,14 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/support" element={<Support />} />
         <Route path="/import-template" element={<ImportTemplate />} />
         <Route path="/testflight" element={<TestFlight />} />
+        <Route
+          path="/admin"
+          element={
+            <Suspense fallback={<div className="min-h-screen bg-surface" />}>
+              <AdminApp />
+            </Suspense>
+          }
+        />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
