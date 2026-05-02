@@ -15,7 +15,7 @@ const JWKS = createRemoteJWKSet(
 
 const ADMIN_EMAIL = 'blueman9@gmail.com'
 const FIREBASE_PROJECT_ID = 'flightopslog'
-const LINEAR_TEAM_KEY = 'FlightOpsLog'
+const LINEAR_TEAM_NAME = 'FlightOpsLog'
 const LINEAR_API = 'https://api.linear.app/graphql'
 
 let cachedTeamId: string | null = null
@@ -58,14 +58,14 @@ async function resolveTeamId(apiKey: string): Promise<string> {
   if (cachedTeamId) return cachedTeamId
   const data = await linearGraphQL(
     apiKey,
-    `query($key: String!) {
-       teams(filter: { key: { eq: $key } }) { nodes { id key } }
+    `query($name: String!) {
+       teams(filter: { name: { eq: $name } }) { nodes { id name } }
      }`,
-    { key: LINEAR_TEAM_KEY },
+    { name: LINEAR_TEAM_NAME },
   )
-  const nodes = (data.teams as { nodes: { id: string; key: string }[] }).nodes
+  const nodes = (data.teams as { nodes: { id: string; name: string }[] }).nodes
   const id = nodes[0]?.id
-  if (!id) throw new Error(`Team key "${LINEAR_TEAM_KEY}" not found in Linear`)
+  if (!id) throw new Error(`Team named "${LINEAR_TEAM_NAME}" not found in Linear`)
   cachedTeamId = id
   return id
 }
