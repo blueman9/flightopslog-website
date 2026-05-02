@@ -23,4 +23,5 @@ export interface Feedback {
   originScreen: string
   logs?: string
   linearIssueUrl?: string
+  triageNote?: string
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { doc, updateDoc, deleteDoc, deleteField } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Feedback } from './types'
 
@@ -100,6 +100,7 @@ export default function FeedbackRow({ feedback, onChanged, onDeleted, onConvert 
       {expanded && (
         <div className="border-t border-secondary-text/20 px-4 py-3 space-y-3">
           <pre className="whitespace-pre-wrap text-sm font-sans">{feedback.body}</pre>
+          <TriageNoteEditor feedback={feedback} onChanged={onChanged} />
           <DiagnosticsBlock feedback={feedback} />
           {feedback.logs && (
             <details className="text-xs">
@@ -155,6 +156,78 @@ export default function FeedbackRow({ feedback, onChanged, onDeleted, onConvert 
       {error && (
         <div className="border-t border-error/20 px-4 py-2 text-xs text-error">{error}</div>
       )}
+    </div>
+  )
+}
+
+function TriageNoteEditor({
+  feedback,
+  onChanged,
+}: {
+  feedback: Feedback
+  onChanged: (id: string, patch: Partial<Feedback>) => void
+}) {
+  const [note, setNote] = useState(feedback.triageNote ?? '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [savedAt, setSavedAt] = useState<number | null>(null)
+
+  const original = feedback.triageNote ?? ''
+  const dirty = note !== original
+
+  async function save() {
+    setError(null)
+    setSaving(true)
+    try {
+      const trimmed = note.trim()
+      const fieldValue = trimmed.length === 0 ? deleteField() : trimmed
+      await updateDoc(doc(db, 'feedback', feedback.id), { triageNote: fieldValue })
+      onChanged(feedback.id, { triageNote: trimmed.length === 0 ? undefined : trimmed })
+      setNote(trimmed)
+      setSavedAt(Date.now())
+    } catch (err: unknown) {
+      const code =
+        err && typeof err === 'object' && 'code' in err
+          ? (err as { code?: string }).code
+          : undefined
+      setError(
+        code === 'permission-denied'
+          ? 'Permission denied. Rules may need redeploying.'
+          : "Couldn't save. Try again.",
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-medium text-secondary-text uppercase tracking-wide">
+          Triage note
+        </label>
+        {savedAt !== null && !dirty && !saving && (
+          <span className="text-xs text-secondary-text">Saved</span>
+        )}
+      </div>
+      <textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        maxLength={5000}
+        rows={3}
+        placeholder="Optional — your thoughts on this feedback"
+        className="w-full bg-surface rounded-lg px-3 py-2 border border-secondary-text/20 text-sm"
+      />
+      <div className="flex items-center gap-3 text-sm">
+        <button
+          onClick={save}
+          disabled={!dirty || saving}
+          className="text-action hover:underline disabled:opacity-50 disabled:hover:no-underline"
+        >
+          {saving ? 'Saving…' : 'Save note'}
+        </button>
+        {error && <span className="text-xs text-error">{error}</span>}
+      </div>
     </div>
   )
 }
