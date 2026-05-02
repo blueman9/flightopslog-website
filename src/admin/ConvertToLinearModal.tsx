@@ -162,7 +162,7 @@ function deriveTitle(f: Feedback): string {
 }
 
 function deriveDescription(f: Feedback): string {
-  const lines = [f.body, '', '---']
+  const lines = [f.body, '', '---', '_Filed via FlightOps Log admin feedback triage._', '']
   lines.push(`App version: ${f.appVersion} (${f.buildNumber})`)
   lines.push(`iOS: ${f.iosVersion} — ${f.deviceModel}`)
   lines.push(`Locale: ${f.locale}`)
