@@ -71,3 +71,40 @@ export default defineConfig([
   },
 ])
 ```
+
+## Admin Dashboard (`/admin`)
+
+A private feedback-triage dashboard at `flightopslog.com/admin`, locked to a single Google account (`blueman9@gmail.com`). Lists `feedback/*` docs from Firestore and supports mark-triaged, delete, and convert-to-Linear actions.
+
+### How it works
+
+- The route is lazy-loaded (`React.lazy`) so the marketing bundle ships zero Firebase code — Firebase downloads only when `/admin` is visited.
+- Sign-in uses Firebase Auth's Google provider client-side; the admin email is checked in three places: the SPA (`src/admin/AdminApp.tsx`), Firestore security rules, and the Cloudflare Pages Function.
+- Convert-to-Linear posts to a Pages Function at `/api/linear-create-issue`. The Function verifies the Firebase ID token via `jose` and Google's JWKS, then calls the Linear GraphQL API with a Workers secret. The API key never reaches the browser.
+
+### Deployment requirements
+
+**Cloudflare Pages env vars (production):**
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN` (e.g. `flightopslog.firebaseapp.com`)
+- `VITE_FIREBASE_PROJECT_ID` (`flightopslog`)
+- `VITE_FIREBASE_APP_ID`
+
+**Cloudflare Pages secret (for the Function):**
+
+- `LINEAR_API_KEY` — set via `npx wrangler pages secret put LINEAR_API_KEY` or in the Pages dashboard.
+
+**Firebase:**
+
+- Add `flightopslog.com` (and any preview domains) to Firebase Auth → Sign-in method → Authorized domains.
+- The Firestore security rules in the **iOS app repo** must grant the admin email read/update/delete on `feedback/*`. See `docs/superpowers/specs/2026-05-01-admin-feedback-dashboard-design.md` for the rules diff.
+
+### Local development
+
+Copy `.env.example` to `.env.local` and fill in your Firebase web SDK config. To exercise the Pages Function locally:
+
+```bash
+npm run build
+npx wrangler pages dev dist --binding LINEAR_API_KEY=<your-linear-key>
+```
