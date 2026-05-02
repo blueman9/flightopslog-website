@@ -58,16 +58,18 @@ async function resolveTeamId(apiKey: string): Promise<string> {
   if (cachedTeamId) return cachedTeamId
   const data = await linearGraphQL(
     apiKey,
-    `query($name: String!) {
-       teams(filter: { name: { eq: $name } }) { nodes { id name } }
-     }`,
-    { name: LINEAR_TEAM_NAME },
+    `query { teams(first: 100) { nodes { id name } } }`,
   )
   const nodes = (data.teams as { nodes: { id: string; name: string }[] }).nodes
-  const id = nodes[0]?.id
-  if (!id) throw new Error(`Team named "${LINEAR_TEAM_NAME}" not found in Linear`)
-  cachedTeamId = id
-  return id
+  const team = nodes.find((t) => t.name === LINEAR_TEAM_NAME)
+  if (!team) {
+    const available = nodes.map((t) => t.name).join(', ') || '(none)'
+    throw new Error(
+      `Team named "${LINEAR_TEAM_NAME}" not found. Visible teams: ${available}`,
+    )
+  }
+  cachedTeamId = team.id
+  return team.id
 }
 
 async function resolveLabelIds(apiKey: string, teamId: string, names: string[]): Promise<string[]> {

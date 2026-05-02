@@ -56,7 +56,7 @@ export default function ConvertToLinearModal({
         if (e.status === 400) return `Invalid request: ${e.message}`
         if (e.status === 504) return "Couldn't reach Linear. Try again."
         if (e.status === 502 && e.code === 'linear_lookup_failed')
-          return "Couldn't find the FlightOpsLog team in Linear."
+          return `Linear lookup failed: ${e.message}`
         if (e.status === 502) return e.message
         if (e.status === 500) return "Server isn't configured. Set LINEAR_API_KEY in Pages."
         if (e.status === 0) return `Network error: ${e.message}`
