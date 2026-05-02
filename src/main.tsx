@@ -8,6 +8,7 @@ import Support from './pages/Support.tsx'
 import ImportTemplate from './pages/ImportTemplate.tsx'
 import TestFlight from './pages/TestFlight.tsx'
 
+// eslint-disable-next-line react-refresh/only-export-components
 const AdminApp = lazy(() => import('./admin/AdminApp.tsx'))
 
 createRoot(document.getElementById('root')!).render(
