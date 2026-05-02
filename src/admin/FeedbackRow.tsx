@@ -222,7 +222,7 @@ function TriageNoteEditor({
         <button
           onClick={save}
           disabled={!dirty || saving}
-          className="text-action hover:underline disabled:opacity-50 disabled:hover:no-underline"
+          className="px-3 py-1 bg-action text-white rounded-full text-xs font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {saving ? 'Saving…' : 'Save note'}
         </button>
