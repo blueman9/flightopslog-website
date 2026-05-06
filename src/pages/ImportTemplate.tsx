@@ -190,10 +190,28 @@ function ImportTemplate() {
           </Section>
 
           <Section title="Troubleshooting">
+            <div className="bg-card rounded-lg border border-secondary-text/20 p-5 mb-4">
+              <p className="font-semibold mb-2">
+                "Import failed: The file couldn't be opened because it isn't in the
+                correct format."
+              </p>
+              <p className="mb-3">
+                Your CSV contains characters that aren't valid UTF-8 — most often a
+                curly apostrophe (<code>'</code>), em-dash (<code>—</code>), or
+                accented character that Numbers or Excel saved in a legacy encoding
+                (Mac OS Roman or Windows-1252).
+              </p>
+              <p>
+                <strong>Fix:</strong> Re-export from Numbers (<strong>File → Export
+                To → CSV → Advanced Options → Text Encoding: Unicode (UTF-8)</strong>)
+                or from Excel (<strong>Save As → CSV UTF-8</strong>). Or open the CSV
+                in TextEdit and re-save with UTF-8 encoding.
+              </p>
+            </div>
             <p>
-              If the import fails, open your CSV in a plain text editor (TextEdit,
-              Notepad) and confirm it's comma-separated with the original header row
-              intact. Still stuck? Email{' '}
+              If the import still fails, open your CSV in a plain text editor
+              (TextEdit, Notepad) and confirm it's comma-separated with the original
+              header row intact. Still stuck? Email{' '}
               <a href="mailto:support@flightopslog.com" className="text-action underline">
                 support@flightopslog.com
               </a>
