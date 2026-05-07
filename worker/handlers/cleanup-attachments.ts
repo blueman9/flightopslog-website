@@ -46,6 +46,24 @@ function jsonResponse(status: number, body: object) {
 
 interface DocAttachment {
   filename?: unknown
+  downloadURL?: unknown
+}
+
+// Firebase Storage downloadURL looks like:
+//   https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{url-encoded-path}?alt=media&token=...
+// iOS uses a fresh UUID (NOT the Firestore doc id) as the {feedbackId} segment in the path,
+// so we MUST parse the path out of the downloadURL rather than constructing it ourselves.
+function extractStoragePath(downloadURL: string): string | null {
+  try {
+    const u = new URL(downloadURL)
+    const idx = u.pathname.indexOf('/o/')
+    if (idx === -1) return null
+    const encoded = u.pathname.slice(idx + 3)
+    if (encoded.length === 0) return null
+    return decodeURIComponent(encoded)
+  } catch {
+    return null
+  }
 }
 
 function isEligible(doc: Record<string, unknown>): { ok: true } | { ok: false; reason: string } {
@@ -79,8 +97,17 @@ async function cleanupOne(idToken: string, feedbackId: string): Promise<PerResul
   const atts = doc.attachments as DocAttachment[]
   let storageOk = true
   for (const a of atts) {
-    if (typeof a.filename !== 'string' || a.filename.length === 0) continue
-    const path = `feedback-attachments/${feedbackId}/${a.filename}`
+    if (typeof a.downloadURL !== 'string' || a.downloadURL.length === 0) {
+      storageOk = false
+      console.warn(`cleanup ${feedbackId}: attachment missing downloadURL`)
+      continue
+    }
+    const path = extractStoragePath(a.downloadURL)
+    if (!path) {
+      storageOk = false
+      console.warn(`cleanup ${feedbackId}: could not extract path from ${a.downloadURL}`)
+      continue
+    }
     try {
       await storageDeleteObject(cfg, idToken, path)
     } catch (err) {
