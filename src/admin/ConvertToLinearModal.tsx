@@ -7,8 +7,8 @@ import { createLinearIssue, LinearError } from './linearClient'
 interface Props {
   feedback: Feedback
   onClose: () => void
-  onCreated: (feedbackId: string, linearIssueUrl: string) => void
-  onPartialFailure: (feedbackId: string, linearIssueUrl: string) => void
+  onCreated: (feedbackId: string, linearIssueUrl: string, archivedToLinear: boolean) => void
+  onPartialFailure: (feedbackId: string, linearIssueUrl: string, archivedToLinear: boolean) => void
 }
 
 export default function ConvertToLinearModal({
@@ -44,9 +44,16 @@ export default function ConvertToLinearModal({
     if (labelQuestion) labels.push('question')
 
     let url: string
+    let archivedToLinear = false
     try {
-      const issue = await createLinearIssue({ title, description, labels })
+      const issue = await createLinearIssue({
+        title,
+        description,
+        labels,
+        attachments: feedback.attachments,
+      })
       url = issue.url
+      archivedToLinear = issue.attachmentsArchivedToLinear
     } catch (err: unknown) {
       const e = err instanceof LinearError ? err : null
       const msg = (() => {
@@ -57,6 +64,10 @@ export default function ConvertToLinearModal({
         if (e.status === 504) return "Couldn't reach Linear. Try again."
         if (e.status === 502 && e.code === 'linear_lookup_failed')
           return `Linear lookup failed: ${e.message}`
+        if (e.status === 502 && e.code === 'attachment_upload_failed') {
+          const link = e.issueUrl ? ` (${e.identifier ?? 'issue'}: ${e.issueUrl})` : ''
+          return `Issue was created but attachments failed to upload${link}. Delete the Linear issue manually if you want to retry.`
+        }
         if (e.status === 502) return e.message
         if (e.status === 500) return "Server isn't configured. Set LINEAR_API_KEY in Pages."
         if (e.status === 0) return `Network error: ${e.message}`
@@ -68,13 +79,15 @@ export default function ConvertToLinearModal({
     }
 
     try {
-      await updateDoc(doc(db, 'feedback', feedback.id), {
+      const update: Record<string, unknown> = {
         status: 'triaged',
         linearIssueUrl: url,
-      })
-      onCreated(feedback.id, url)
+      }
+      if (archivedToLinear) update.attachmentsArchivedToLinear = true
+      await updateDoc(doc(db, 'feedback', feedback.id), update)
+      onCreated(feedback.id, url, archivedToLinear)
     } catch {
-      onPartialFailure(feedback.id, url)
+      onPartialFailure(feedback.id, url, archivedToLinear)
     }
   }
 
@@ -105,6 +118,11 @@ export default function ConvertToLinearModal({
               className="w-full bg-surface rounded-lg px-3 py-2 border border-secondary-text/20 font-mono text-sm"
             />
           </div>
+          {feedback.attachments && feedback.attachments.length > 0 && (
+            <div className="text-sm text-secondary-text">
+              📎 {feedback.attachments.length} attachment(s) will be uploaded to Linear.
+            </div>
+          )}
           <div>
             <span className="block text-sm font-medium mb-2">Labels</span>
             <div className="flex flex-wrap gap-3 text-sm">

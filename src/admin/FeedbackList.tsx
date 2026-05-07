@@ -1,9 +1,11 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Feedback } from './types'
 import FeedbackRow from './FeedbackRow'
 import ConvertToLinearModal from './ConvertToLinearModal'
+import CleanupModal from './CleanupModal'
+import { cleanupAttachments } from './linearClient'
 
 export default function FeedbackList() {
   const [items, setItems] = useState<Feedback[] | null>(null)
@@ -12,6 +14,8 @@ export default function FeedbackList() {
   const [convertTarget, setConvertTarget] = useState<Feedback | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [cleanupOpen, setCleanupOpen] = useState(false)
+  const [cleanupBusy, setCleanupBusy] = useState(false)
 
   const load = useCallback(async () => {
     setRefreshing(true)
@@ -52,13 +56,17 @@ export default function FeedbackList() {
     setItems((prev) => (prev ? prev.filter((f) => f.id !== id) : prev))
   }
 
-  function onCreated(feedbackId: string, url: string) {
-    patchItem(feedbackId, { status: 'triaged', linearIssueUrl: url })
+  function onCreated(feedbackId: string, url: string, archived: boolean) {
+    const patch: Partial<Feedback> = { status: 'triaged', linearIssueUrl: url }
+    if (archived) patch.attachmentsArchivedToLinear = true
+    patchItem(feedbackId, patch)
     setConvertTarget(null)
   }
 
-  function onPartialFailure(feedbackId: string, url: string) {
-    patchItem(feedbackId, { linearIssueUrl: url })
+  function onPartialFailure(feedbackId: string, url: string, archived: boolean) {
+    const patch: Partial<Feedback> = { linearIssueUrl: url }
+    if (archived) patch.attachmentsArchivedToLinear = true
+    patchItem(feedbackId, patch)
     setConvertTarget(null)
     setToast(
       `Issue created at ${url}, but couldn't mark this feedback as triaged. Click 'Mark triaged' to fix it.`,
@@ -66,6 +74,41 @@ export default function FeedbackList() {
   }
 
   const filtered = items?.filter((f) => showAll || f.status !== 'triaged') ?? []
+
+  const eligibleForCleanup = useMemo(() => {
+    if (!items) return []
+    return items.filter((f) => {
+      if (f.status !== 'triaged') return false
+      if (!f.attachments || f.attachments.length === 0) return false
+      const hasLinear = typeof f.linearIssueUrl === 'string' && f.linearIssueUrl.length > 0
+      const archived = f.attachmentsArchivedToLinear === true
+      return archived || !hasLinear
+    })
+  }, [items])
+
+  async function runCleanup() {
+    setCleanupBusy(true)
+    try {
+      const ids = eligibleForCleanup.map((f) => f.id)
+      const resp = await cleanupAttachments(ids)
+      const cleanedSet = new Set(
+        resp.results.filter((r) => r.status === 'cleaned').map((r) => r.feedbackId),
+      )
+      setItems((prev) =>
+        prev
+          ? prev.map((f) => (cleanedSet.has(f.id) ? { ...f, attachments: undefined } : f))
+          : prev,
+      )
+      const { cleaned, skipped, partial, failed } = resp.summary
+      setToast(`Cleaned ${cleaned}. Skipped ${skipped}. Partial ${partial}. Failed ${failed}.`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cleanup failed.'
+      setToast(`Cleanup failed: ${msg}`)
+    } finally {
+      setCleanupBusy(false)
+      setCleanupOpen(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -80,6 +123,13 @@ export default function FeedbackList() {
           Show triaged
         </label>
         <span className="flex-1" />
+        <button
+          onClick={() => setCleanupOpen(true)}
+          disabled={eligibleForCleanup.length === 0 || cleanupBusy}
+          className="text-sm text-action hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
+        >
+          Clean up Storage ({eligibleForCleanup.length})
+        </button>
         <button
           onClick={() => void load()}
           disabled={refreshing}
@@ -126,6 +176,15 @@ export default function FeedbackList() {
           onClose={() => setConvertTarget(null)}
           onCreated={onCreated}
           onPartialFailure={onPartialFailure}
+        />
+      )}
+
+      {cleanupOpen && (
+        <CleanupModal
+          eligible={eligibleForCleanup}
+          busy={cleanupBusy}
+          onConfirm={() => void runCleanup()}
+          onClose={() => setCleanupOpen(false)}
         />
       )}
     </div>
