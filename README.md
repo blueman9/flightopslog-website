@@ -102,7 +102,7 @@ These are inlined by Vite at build time. They live under Worker → Settings →
 **Firebase:**
 
 - Add `flightopslog.com` (and any preview domains) to Firebase Auth → Sign-in method → Authorized domains.
-- Firestore rules live in this repo as `firestore.rules`. They grant the admin email read/update/delete on `feedback/*` (with the admin-write fields locked down to `status`, `linearIssueUrl`, `triageNote`, `attachmentsArchivedToLinear`, and clearing `attachments`), and allow unauthenticated `feedback/*` create from iOS with strict shape validation. Deploy with `firebase deploy --only firestore`.
+- **Firestore rules live in the iOS repo** at `/Users/blueman9/Documents/Pilot Logbook/firestore.rules` — that's the single source of truth for feedback create + admin update validation. Edit there, deploy from there. Do not add a copy back to this repo. See "Firebase deploys" below.
 - Storage rules live in this repo as `storage.rules` (deploy with `firebase deploy --only storage`). They allow create on `feedback-attachments/{feedbackId}/{filename}` (size + content-type gated; iOS uploads anonymously, mirroring Firestore), allow public read so downloadURLs work in the admin UI and the Worker, and allow delete only for the admin email.
 
 ### Local development
@@ -142,10 +142,12 @@ The website depends on Firebase rules + functions deployed from this repo:
 
   Run this whenever `storage.rules` changes.
 
-- **Firestore rules** — `firestore.rules`. Deploy with:
+- **Firestore rules** — canonical file is in the iOS repo (`/Users/blueman9/Documents/Pilot Logbook/firestore.rules`). To deploy, run from that repo:
 
   ```bash
-  firebase deploy --only firestore
+  (cd "/Users/blueman9/Documents/Pilot Logbook" && firebase deploy --only firestore --project flightopslog)
   ```
+
+  Both repos point to the same Firebase project, but only one file should exist. Never re-add `firestore.rules` to this repo — it'll silently drift the next time someone deploys from the iOS side.
 
 - **Cloud Functions** — `functions/`. Deploy with `firebase deploy --only functions`.

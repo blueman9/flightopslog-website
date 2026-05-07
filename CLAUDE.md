@@ -114,6 +114,15 @@ Use Linear (via MCP) for all task and issue tracking. Team: **FlightOpsLog**.
 ### Cloudflare Pages SPA Routing
 Cloudflare Pages needs a `_redirects` file or `/* /index.html 200` rule in `public/_redirects` so client-side routing works on direct URL access or page refresh.
 
+### Firebase rules — Firestore lives in the iOS repo
+Both this repo and the iOS app at `/Users/blueman9/Documents/Pilot Logbook` share the same Firebase project (`flightopslog`). To prevent rules drift, the canonical `firestore.rules` lives **only** in the iOS repo. When the website needs new admin-write fields validated, edit and deploy from there:
+
+```bash
+(cd "/Users/blueman9/Documents/Pilot Logbook" && firebase deploy --only firestore --project flightopslog)
+```
+
+This repo owns `storage.rules` and `functions/`. Do not re-add `firestore.rules` here.
+
 ---
 
 ## Architecture Notes
