@@ -2,8 +2,10 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /feedback-attachments/{feedbackId}/{filename} {
-      allow create: if request.auth != null
-                    && request.resource.size < 6 * 1024 * 1024
+      // iOS uploads feedback attachments without Firebase auth (mirroring
+      // the unauthenticated feedback create on Firestore). Path is a hard-
+      // to-guess UUID; size + content-type are gated below.
+      allow create: if request.resource.size < 6 * 1024 * 1024
                     && request.resource.contentType.matches('image/jpeg|text/csv');
       allow read: if true;
       allow delete: if request.auth != null

@@ -102,8 +102,8 @@ These are inlined by Vite at build time. They live under Worker → Settings →
 **Firebase:**
 
 - Add `flightopslog.com` (and any preview domains) to Firebase Auth → Sign-in method → Authorized domains.
-- The Firestore security rules in the **iOS app repo** must grant the admin email read/update/delete on `feedback/*` and accept the website's admin-write fields (`status`, `linearIssueUrl`, `triageNote`, `attachmentsArchivedToLinear`). See `docs/superpowers/specs/2026-05-01-admin-feedback-dashboard-design.md` for the rules diff.
-- Storage rules live in this repo as `storage.rules` (deployed via `firebase deploy --only storage`). They allow authenticated create on `feedback-attachments/{feedbackId}/{filename}` (size + content-type gated), allow public read so downloadURLs work in the admin UI and the Worker, and allow delete only for the admin email.
+- Firestore rules live in this repo as `firestore.rules`. They grant the admin email read/update/delete on `feedback/*` (with the admin-write fields locked down to `status`, `linearIssueUrl`, `triageNote`, `attachmentsArchivedToLinear`, and clearing `attachments`), and allow unauthenticated `feedback/*` create from iOS with strict shape validation. Deploy with `firebase deploy --only firestore`.
+- Storage rules live in this repo as `storage.rules` (deploy with `firebase deploy --only storage`). They allow create on `feedback-attachments/{feedbackId}/{filename}` (size + content-type gated; iOS uploads anonymously, mirroring Firestore), allow public read so downloadURLs work in the admin UI and the Worker, and allow delete only for the admin email.
 
 ### Local development
 
@@ -142,6 +142,10 @@ The website depends on Firebase rules + functions deployed from this repo:
 
   Run this whenever `storage.rules` changes.
 
-- **Cloud Functions** — `functions/`. Deploy with `firebase deploy --only functions`.
+- **Firestore rules** — `firestore.rules`. Deploy with:
 
-- **Firestore rules** — currently maintained in the iOS app repo (see Deployment requirements above).
+  ```bash
+  firebase deploy --only firestore
+  ```
+
+- **Cloud Functions** — `functions/`. Deploy with `firebase deploy --only functions`.
