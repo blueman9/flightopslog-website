@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { doc, updateDoc, deleteDoc, deleteField } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Feedback } from './types'
+import AttachmentsBlock from './AttachmentsBlock'
 
 interface Props {
   feedback: Feedback
@@ -90,6 +91,19 @@ export default function FeedbackRow({ feedback, onChanged, onDeleted, onConvert 
         <CategoryPill category={feedback.category} />
         <StatusPill status={feedback.status} />
         <span className="flex-1 text-sm truncate">{preview}</span>
+        {feedback.attachments && feedback.attachments.length > 0 && (
+          <span className="text-xs text-secondary-text" title="Attachments">
+            📎 {feedback.attachments.length}
+          </span>
+        )}
+        {feedback.attachmentUploadFailures != null && feedback.attachmentUploadFailures > 0 && (
+          <span
+            className="text-xs px-2 py-0.5 rounded-full bg-error/10 text-error"
+            title="Some attachments failed to upload from the iOS app"
+          >
+            ⚠ {feedback.attachmentUploadFailures} failed
+          </span>
+        )}
         {feedback.contactEmail && (
           <span className="text-xs text-secondary-text hidden sm:inline">
             {feedback.contactEmail}
@@ -100,6 +114,12 @@ export default function FeedbackRow({ feedback, onChanged, onDeleted, onConvert 
       {expanded && (
         <div className="border-t border-secondary-text/20 px-4 py-3 space-y-3">
           <pre className="whitespace-pre-wrap text-sm font-sans">{feedback.body}</pre>
+          {feedback.attachments && feedback.attachments.length > 0 && (
+            <AttachmentsBlock
+              attachments={feedback.attachments}
+              archivedToLinear={feedback.attachmentsArchivedToLinear === true}
+            />
+          )}
           <TriageNoteEditor feedback={feedback} onChanged={onChanged} />
           <DiagnosticsBlock feedback={feedback} />
           {feedback.logs && (
