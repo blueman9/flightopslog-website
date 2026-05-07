@@ -80,8 +80,9 @@ A private feedback-triage dashboard at `flightopslog.com/admin`, locked to a sin
 
 - The route is lazy-loaded (`React.lazy`) so the marketing bundle ships zero Firebase code — Firebase downloads only when `/admin` is visited.
 - Sign-in uses Firebase Auth's Google provider client-side; the admin email is checked in three places: the SPA (`src/admin/AdminApp.tsx`), the Worker handler, and Firestore security rules.
-- The site deploys as a Cloudflare **Worker with static assets**, configured in `wrangler.jsonc`. The Worker entrypoint at `worker/index.ts` routes `POST /api/linear-create-issue` to the handler in `worker/handlers/linear-create-issue.ts` and forwards everything else to `env.ASSETS.fetch(request)` (which serves `dist/` and falls back to `index.html` for SPA routes).
-- The handler verifies the Firebase ID token via `jose` against Google's JWKS, then calls the Linear GraphQL API with the `LINEAR_API_KEY` secret. The API key never reaches the browser.
+- The site deploys as a Cloudflare **Worker with static assets**, configured in `wrangler.jsonc`. The Worker entrypoint at `worker/index.ts` routes `POST /api/linear-create-issue` and `POST /api/cleanup-attachments` to handlers under `worker/handlers/`, and forwards everything else to `env.ASSETS.fetch(request)` (which serves `dist/` and falls back to `index.html` for SPA routes).
+- Handlers verify the Firebase ID token via `jose` against Google's JWKS, then call the Linear GraphQL API (with `LINEAR_API_KEY`) and/or the Firebase REST APIs (Storage + Firestore, using the forwarded admin token) on behalf of the admin. The Linear key never reaches the browser.
+- Feedback can include image and CSV attachments uploaded by the iOS app to Firebase Storage. When the admin converts feedback to Linear, the Worker also uploads the attachment bytes to Linear (all-or-nothing) and marks the doc `attachmentsArchivedToLinear: true`. A "Clean up Storage" sweep on the dashboard then deletes the Storage objects and clears the `attachments` field for any triaged feedback that's safely archived to Linear or was discarded without filing.
 
 ### Deployment requirements
 
@@ -101,7 +102,8 @@ These are inlined by Vite at build time. They live under Worker → Settings →
 **Firebase:**
 
 - Add `flightopslog.com` (and any preview domains) to Firebase Auth → Sign-in method → Authorized domains.
-- The Firestore security rules in the **iOS app repo** must grant the admin email read/update/delete on `feedback/*`. See `docs/superpowers/specs/2026-05-01-admin-feedback-dashboard-design.md` for the rules diff.
+- The Firestore security rules in the **iOS app repo** must grant the admin email read/update/delete on `feedback/*` and accept the website's admin-write fields (`status`, `linearIssueUrl`, `triageNote`, `attachmentsArchivedToLinear`). See `docs/superpowers/specs/2026-05-01-admin-feedback-dashboard-design.md` for the rules diff.
+- Storage rules live in this repo as `storage.rules` (deployed via `firebase deploy --only storage`). They allow authenticated create on `feedback-attachments/{feedbackId}/{filename}` (size + content-type gated), allow public read so downloadURLs work in the admin UI and the Worker, and allow delete only for the admin email.
 
 ### Local development
 
@@ -127,3 +129,19 @@ npx wrangler types
 ```
 
 This rewrites `worker-configuration.d.ts` (committed to the repo).
+
+### Firebase deploys
+
+The website depends on Firebase rules + functions deployed from this repo:
+
+- **Storage rules** — `storage.rules`. Deploy with:
+
+  ```bash
+  firebase deploy --only storage
+  ```
+
+  Run this whenever `storage.rules` changes.
+
+- **Cloud Functions** — `functions/`. Deploy with `firebase deploy --only functions`.
+
+- **Firestore rules** — currently maintained in the iOS app repo (see Deployment requirements above).
