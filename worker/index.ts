@@ -1,4 +1,5 @@
-import { onRequestPost } from './handlers/linear-create-issue'
+import { onRequestPost as linearCreateIssue } from './handlers/linear-create-issue'
+import { onRequestPost as cleanupAttachments } from './handlers/cleanup-attachments'
 
 declare global {
   interface Env {
@@ -10,7 +11,10 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname === '/api/linear-create-issue' && request.method === 'POST') {
-      return onRequestPost({ request, env })
+      return linearCreateIssue({ request, env })
+    }
+    if (url.pathname === '/api/cleanup-attachments' && request.method === 'POST') {
+      return cleanupAttachments({ request })
     }
     return env.ASSETS.fetch(request)
   },
