@@ -1,4 +1,11 @@
 import { jwtVerify, createRemoteJWKSet } from 'jose'
+import {
+  resolveTeamId,
+  resolveLabelIds,
+  createIssue,
+  uploadAttachmentToLinear,
+  type AttachmentInput,
+} from '../lib/linear'
 
 interface Env {
   LINEAR_API_KEY: string
@@ -16,15 +23,20 @@ const JWKS = createRemoteJWKSet(
 const ADMIN_EMAIL = 'blueman9@gmail.com'
 const FIREBASE_PROJECT_ID = 'flightopslog'
 const LINEAR_TEAM_NAME = 'FlightOpsLog'
-const LINEAR_API = 'https://api.linear.app/graphql'
+const MAX_ATTACHMENTS = 4
 
-let cachedTeamId: string | null = null
-const cachedLabelIds = new Map<string, string>()
+interface AttachmentBody {
+  filename: string
+  contentType: string
+  sizeBytes: number
+  downloadURL: string
+}
 
 interface RequestBody {
   title: string
   description: string
   labels?: string[]
+  attachments?: AttachmentBody[]
 }
 
 function jsonResponse(status: number, body: object) {
@@ -34,67 +46,16 @@ function jsonResponse(status: number, body: object) {
   })
 }
 
-async function linearGraphQL(apiKey: string, query: string, variables?: object) {
-  const res = await fetch(LINEAR_API, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: apiKey,
-    },
-    body: JSON.stringify({ query, variables }),
-  })
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Linear HTTP ${res.status}: ${text.slice(0, 500)}`)
-  }
-  const data = (await res.json()) as { data?: unknown; errors?: { message: string }[] }
-  if (data.errors?.length) {
-    throw new Error(`Linear: ${data.errors.map((e) => e.message).join('; ')}`)
-  }
-  return data.data as Record<string, unknown>
-}
-
-async function resolveTeamId(apiKey: string): Promise<string> {
-  if (cachedTeamId) return cachedTeamId
-  const data = await linearGraphQL(
-    apiKey,
-    `query { teams(first: 100) { nodes { id name } } }`,
+function isValidAttachment(a: unknown): a is AttachmentBody {
+  if (typeof a !== 'object' || a === null) return false
+  const x = a as Record<string, unknown>
+  return (
+    typeof x.filename === 'string' && x.filename.length > 0 && x.filename.length < 256 &&
+    typeof x.contentType === 'string' &&
+    (x.contentType === 'image/jpeg' || x.contentType === 'text/csv') &&
+    typeof x.sizeBytes === 'number' && x.sizeBytes >= 0 && x.sizeBytes < 10 * 1024 * 1024 &&
+    typeof x.downloadURL === 'string' && x.downloadURL.startsWith('https://')
   )
-  const nodes = (data.teams as { nodes: { id: string; name: string }[] }).nodes
-  const team = nodes.find((t) => t.name === LINEAR_TEAM_NAME)
-  if (!team) {
-    const available = nodes.map((t) => t.name).join(', ') || '(none)'
-    throw new Error(
-      `Team named "${LINEAR_TEAM_NAME}" not found. Visible teams: ${available}`,
-    )
-  }
-  cachedTeamId = team.id
-  return team.id
-}
-
-async function resolveLabelIds(apiKey: string, teamId: string, names: string[]): Promise<string[]> {
-  const lower = names.map((n) => n.toLowerCase())
-  const missing = lower.some((n) => !cachedLabelIds.has(n))
-  if (missing) {
-    const data = await linearGraphQL(
-      apiKey,
-      `query($teamId: String!) {
-         team(id: $teamId) { labels { nodes { id name } } }
-       }`,
-      { teamId },
-    )
-    const labelNodes = (data.team as { labels: { nodes: { id: string; name: string }[] } })
-      .labels.nodes
-    for (const node of labelNodes) {
-      cachedLabelIds.set(node.name.toLowerCase(), node.id)
-    }
-  }
-  const ids: string[] = []
-  for (const n of lower) {
-    const id = cachedLabelIds.get(n)
-    if (id) ids.push(id)
-  }
-  return ids
 }
 
 export const onRequestPost = async ({ request, env }: RequestContext): Promise<Response> => {
@@ -144,9 +105,17 @@ export const onRequestPost = async ({ request, env }: RequestContext): Promise<R
     return jsonResponse(400, { error: 'invalid_request', detail: 'labels invalid' })
   }
 
+  const attachments: AttachmentBody[] = Array.isArray(body.attachments) ? body.attachments : []
+  if (attachments.length > MAX_ATTACHMENTS) {
+    return jsonResponse(400, { error: 'invalid_request', detail: 'too many attachments' })
+  }
+  if (attachments.some((a) => !isValidAttachment(a))) {
+    return jsonResponse(400, { error: 'invalid_request', detail: 'attachment invalid' })
+  }
+
   let teamId: string
   try {
-    teamId = await resolveTeamId(env.LINEAR_API_KEY)
+    teamId = await resolveTeamId(env.LINEAR_API_KEY, LINEAR_TEAM_NAME)
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'lookup failed'
     return jsonResponse(502, { error: 'linear_lookup_failed', detail })
@@ -160,41 +129,45 @@ export const onRequestPost = async ({ request, env }: RequestContext): Promise<R
     return jsonResponse(502, { error: 'linear_lookup_failed', detail })
   }
 
-  let created: {
-    issueCreate?: {
-      success: boolean
-      issue?: { id: string; url: string; identifier: string }
-    }
-  }
+  let issue
   try {
-    created = (await linearGraphQL(
-      env.LINEAR_API_KEY,
-      `mutation($input: IssueCreateInput!) {
-         issueCreate(input: $input) {
-           success
-           issue { id url identifier }
-         }
-       }`,
-      {
-        input: {
-          teamId,
-          title: body.title,
-          description: body.description,
-          labelIds,
-        },
-      },
-    )) as typeof created
+    issue = await createIssue(env.LINEAR_API_KEY, {
+      teamId,
+      title: body.title,
+      description: body.description,
+      labelIds,
+    })
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'create failed'
     return jsonResponse(502, { error: 'linear_create_failed', detail })
   }
 
-  if (!created.issueCreate?.success || !created.issueCreate.issue) {
-    return jsonResponse(502, {
-      error: 'linear_create_failed',
-      detail: 'issueCreate returned success=false',
-    })
+  if (attachments.length > 0) {
+    for (const a of attachments) {
+      try {
+        const input: AttachmentInput = {
+          filename: a.filename,
+          contentType: a.contentType,
+          sizeBytes: a.sizeBytes,
+          downloadURL: a.downloadURL,
+        }
+        await uploadAttachmentToLinear(env.LINEAR_API_KEY, issue.id, input)
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : 'upload failed'
+        return jsonResponse(502, {
+          error: 'attachment_upload_failed',
+          issueUrl: issue.url,
+          identifier: issue.identifier,
+          detail,
+        })
+      }
+    }
   }
-  const { id, url, identifier } = created.issueCreate.issue
-  return jsonResponse(200, { id, url, identifier })
+
+  return jsonResponse(200, {
+    id: issue.id,
+    url: issue.url,
+    identifier: issue.identifier,
+    attachmentsArchivedToLinear: attachments.length > 0,
+  })
 }
